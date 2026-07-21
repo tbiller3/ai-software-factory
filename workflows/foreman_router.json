@@ -1,0 +1,88 @@
+{
+  "name": "foreman_router",
+  "nodes": [
+    {
+      "id": "Trigger_Manual",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [180, 280],
+      "parameters": {}
+    },
+    {
+      "id": "Product_Foreman",
+      "type": "n8n-nodes-base.openAi",
+      "position": [430, 120],
+      "parameters": {
+        "operation": "chat",
+        "model": "gpt-4o-mini",
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are Product Foreman. Return JSON keys: value_proposition, feature_list, acceptance_criteria."
+          },
+          {
+            "role": "user",
+            "content": "Use this superintendent plan: {{$json.plan}}"
+          }
+        ]
+      }
+    },
+    {
+      "id": "Engineering_Foreman",
+      "type": "n8n-nodes-base.openAi",
+      "position": [430, 280],
+      "parameters": {
+        "operation": "chat",
+        "model": "gpt-4o-mini",
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are Engineering Foreman. Return JSON keys: architecture, task_graph, dependencies."
+          },
+          {
+            "role": "user",
+            "content": "Use this superintendent plan: {{$json.plan}}"
+          }
+        ]
+      }
+    },
+    {
+      "id": "QA_Release_Foreman",
+      "type": "n8n-nodes-base.openAi",
+      "position": [430, 440],
+      "parameters": {
+        "operation": "chat",
+        "model": "gpt-4o-mini",
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are QA/Release Foreman. Return JSON keys: qa_checklist, release_readiness_criteria, risk_checks."
+          },
+          {
+            "role": "user",
+            "content": "Use this superintendent plan: {{$json.plan}}"
+          }
+        ]
+      }
+    },
+    {
+      "id": "Merge_Foreman_Outputs",
+      "type": "n8n-nodes-base.merge",
+      "position": [700, 280],
+      "parameters": { "mode": "append" }
+    }
+  ],
+  "connections": {
+    "Trigger_Manual": {
+      "main": [
+        [{ "node": "Product_Foreman", "type": "main", "index": 0 }],
+        [{ "node": "Engineering_Foreman", "type": "main", "index": 0 }],
+        [{ "node": "QA_Release_Foreman", "type": "main", "index": 0 }]
+      ]
+    },
+    "Product_Foreman": { "main": [[{ "node": "Merge_Foreman_Outputs", "type": "main", "index": 0 }]] },
+    "Engineering_Foreman": { "main": [[{ "node": "Merge_Foreman_Outputs", "type": "main", "index": 1 }]] },
+    "QA_Release_Foreman": { "main": [[{ "node": "Merge_Foreman_Outputs", "type": "main", "index": 2 }]] }
+  },
+  "active": false,
+  "settings": {}
+}
