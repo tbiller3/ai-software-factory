@@ -1,0 +1,78 @@
+{
+  "name": "intake_superintendent",
+  "nodes": [
+    {
+      "id": "Webhook_In",
+      "type": "n8n-nodes-base.webhook",
+      "position": [200, 300],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "intake-superintendent",
+        "responseMode": "responseNode"
+      }
+    },
+    {
+      "id": "Set_Run_Metadata",
+      "type": "n8n-nodes-base.set",
+      "position": [420, 300],
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            { "name": "run_name", "value": "={{'run_' + $now}}" },
+            { "name": "status", "value": "started" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Superintendent_Plan",
+      "type": "n8n-nodes-base.openAi",
+      "position": [660, 300],
+      "parameters": {
+        "operation": "chat",
+        "model": "gpt-4o-mini",
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are the Superintendent Agent. Convert user idea into a clear project brief, work packages, priorities, and risks. Return strict JSON with keys: project_brief, work_packages, priorities, risks."
+          },
+          {
+            "role": "user",
+            "content": "Idea: {{$json.body.idea}}\nAudience: {{$json.body.audience}}\nOutput type: {{$json.body.output_type}}"
+          }
+        ]
+      }
+    },
+    {
+      "id": "Approval_Gate_Required",
+      "type": "n8n-nodes-base.set",
+      "position": [900, 300],
+      "parameters": {
+        "values": {
+          "string": [
+            { "name": "status", "value": "needs_approval" },
+            { "name": "gate_name", "value": "plan_gate" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [1140, 300],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"message\":\"Plan generated. Human approval required.\",\"plan\":$json}"
+      }
+    }
+  ],
+  "connections": {
+    "Webhook_In": { "main": [[{ "node": "Set_Run_Metadata", "type": "main", "index": 0 }]] },
+    "Set_Run_Metadata": { "main": [[{ "node": "Superintendent_Plan", "type": "main", "index": 0 }]] },
+    "Superintendent_Plan": { "main": [[{ "node": "Approval_Gate_Required", "type": "main", "index": 0 }]] },
+    "Approval_Gate_Required": { "main": [[{ "node": "Respond", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": {}
+}
