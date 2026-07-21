@@ -1,0 +1,70 @@
+{
+  "name": "worker_executor",
+  "nodes": [
+    {
+      "id": "Trigger_Manual",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [180, 260],
+      "parameters": {}
+    },
+    {
+      "id": "Copy_Worker",
+      "type": "n8n-nodes-base.openAi",
+      "position": [430, 80],
+      "parameters": {
+        "operation": "chat",
+        "model": "gpt-4o-mini",
+        "messages": [
+          { "role": "system", "content": "You are Copy Worker. Return JSON: headline, subheadline, CTA, 3 benefit bullets." },
+          { "role": "user", "content": "Build copy from product foreman output: {{$json.product}}" }
+        ]
+      }
+    },
+    {
+      "id": "Page_Structure_Worker",
+      "type": "n8n-nodes-base.openAi",
+      "position": [430, 260],
+      "parameters": {
+        "operation": "chat",
+        "model": "gpt-4o-mini",
+        "messages": [
+          { "role": "system", "content": "You are Page Structure Worker. Return JSON: sections, component_map, page_flow." },
+          { "role": "user", "content": "Use product + engineering outputs: {{$json.product}} {{$json.engineering}}" }
+        ]
+      }
+    },
+    {
+      "id": "QA_Checklist_Worker",
+      "type": "n8n-nodes-base.openAi",
+      "position": [430, 440],
+      "parameters": {
+        "operation": "chat",
+        "model": "gpt-4o-mini",
+        "messages": [
+          { "role": "system", "content": "You are QA Checklist Worker. Return JSON: functional_tests, ux_checks, launch_blockers." },
+          { "role": "user", "content": "Use QA foreman output: {{$json.qa_release}}" }
+        ]
+      }
+    },
+    {
+      "id": "Merge_Worker_Outputs",
+      "type": "n8n-nodes-base.merge",
+      "position": [700, 260],
+      "parameters": { "mode": "append" }
+    }
+  ],
+  "connections": {
+    "Trigger_Manual": {
+      "main": [
+        [{ "node": "Copy_Worker", "type": "main", "index": 0 }],
+        [{ "node": "Page_Structure_Worker", "type": "main", "index": 0 }],
+        [{ "node": "QA_Checklist_Worker", "type": "main", "index": 0 }]
+      ]
+    },
+    "Copy_Worker": { "main": [[{ "node": "Merge_Worker_Outputs", "type": "main", "index": 0 }]] },
+    "Page_Structure_Worker": { "main": [[{ "node": "Merge_Worker_Outputs", "type": "main", "index": 1 }]] },
+    "QA_Checklist_Worker": { "main": [[{ "node": "Merge_Worker_Outputs", "type": "main", "index": 2 }]] }
+  },
+  "active": false,
+  "settings": {}
+}
